@@ -1,0 +1,21 @@
+{
+  "name": "youtubebackend",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "dev": "concurrently \"npx tsc -w\" \"nodemon dist/index.js\""
+  },
+  "dependencies": {
+    "typescript": "^5.2.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.10",
+    "@typescript-eslint/eslint-plugin": "^6.10.0",
+    "@typescript-eslint/parser": "^6.10.0",
+    "concurrently": "^8.2.2",
+    "eslint": "^8.53.0",
+    "nodemon": "^3.0.1"
+  }
+}
