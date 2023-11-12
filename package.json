@@ -8,7 +8,9 @@
     "dev": "concurrently \"npx tsc -w\" \"nodemon -r dotenv/config --experimental-json-modules dist/index.js\""
   },
   "dependencies": {
+    "@types/multer": "^1.4.10",
     "bcrypt": "^5.1.1",
+    "cloudinary": "^1.41.0",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
@@ -17,6 +19,7 @@
     "mongodb": "^6.2.0",
     "mongoose": "^8.0.0",
     "mongoose-aggregate-paginate-v2": "^1.0.6",
+    "multer": "^1.4.5-lts.1",
     "typescript": "*"
   },
   "devDependencies": {
