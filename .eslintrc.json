@@ -81,10 +81,10 @@
     ],
     "keyword-spacing": [
       "error",
-      { 
-        "before": true, 
-        "after": true 
-       }
+      {
+        "before": true,
+        "after": true
+      }
     ],
     "dot-location": [
       "error",
@@ -99,7 +99,7 @@
       "last"
     ],
     "space-in-parens": [
-      "error", 
+      "error",
       "never"
     ],
     "space-infix-ops": [
