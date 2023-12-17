@@ -5,10 +5,10 @@ class ApiError<Data = null> extends Error {
   public success: boolean;
   public errors: Error[];
 
-  constructor (
+  constructor(
     statusCode: number,
     message: string = 'Something went wrong',
-    errors: [],
+    errors: Error[] = [],
     stack: string = ''
   ) {
     super(message);

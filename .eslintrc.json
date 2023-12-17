@@ -55,7 +55,7 @@
       "error",
       {
         "vars": "all",
-        "args": "after-used",
+        "args": "none",
         "ignoreRestSiblings": false
       }
     ],
@@ -72,10 +72,6 @@
       "error"
     ],
     "object-curly-spacing": [
-      "error",
-      "always"
-    ],
-    "space-before-function-paren": [
       "error",
       "always"
     ],
