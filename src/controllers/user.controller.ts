@@ -187,9 +187,60 @@ const refreshAccessToken = asyncHandler(async (req: Request, res: Response) => {
   }
 });
 
+const changeCurrentPassword = asyncHandler((req: IRequestWithUser, res: Response) => {
+  const { oldPassword, newPassword } = req.body;
+
+  const user = await User.findById(req.user?._id);
+
+  const isPasswordCorrect = await user?.isPasswordCorrect(oldPassword);
+  if (!isPasswordCorrect) throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid old password');
+  user?.password = newPassword;
+  await user?.save({ validateBeforeSave: false });
+
+  res
+    .status(StatusCodes.OK)
+    .json(
+      new ApiResponse(200, {}, 'Password change successfully')
+    );
+});
+
+const getCurrentUser = asyncHandler((req: IRequestWithUser, res: Response) => {
+  res
+    .status(StatusCodes.OK)
+    .json(
+      new ApiResponse(200, req.user, 'current user fetched successfully')
+    );
+});
+
+const updateUserDetails = asyncHandler((req: IRequestWithUser, res: Response) => {
+  const { fullname, email } = req.body;
+
+  if (!fullname || !email) throw new ApiError(StatusCodes.BAD_REQUEST, 'All feilds are required');
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        fullname,
+        email
+      }
+    },
+    { new: true }
+  ).select('-password');
+
+  res
+    .status(StatusCodes.OK)
+    .json(
+      new ApiResponse(StatusCodes.OK, user, 'Account details')
+    );
+});
+
 export {
   registerUser,
   loginUser,
   logoutUser,
-  refreshAccessToken
+  refreshAccessToken,
+  changeCurrentPassword,
+  getCurrentUser,
+  updateUserDetails
 };
