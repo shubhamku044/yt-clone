@@ -8,7 +8,6 @@ import { JwtPayloadWithUser, IRequestWithUser } from '../types/definitionFile.js
 
 const verifyJWT = asyncHandler(async (req: IRequestWithUser, res: Response, next: NextFunction) => {
   try {
-
     const token = req.cookies?.accessToken || req.header('Authorization')?.replace('Bearer ', '');
 
     if (!token) throw new ApiError(StatusCodes.UNAUTHORIZED, 'Unauthorized token');

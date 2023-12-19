@@ -1,10 +1,16 @@
 import { User } from '../models/user.model.js';
-import { IRequestWithUser } from '../types/definitionFile.js';
+import {
+  IRequestWithMulterFiles,
+  IRequestWithUser,
+  JwtPayloadWithUser
+} from '../types/definitionFile.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import type { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
+import jwt from 'jsonwebtoken';
+import { uploadToCloudinary } from '../utils/cloudinary.js';
 
 interface Tokens {
   accessToken: string | undefined;
@@ -30,22 +36,61 @@ const generateAccessAndRefreshToken = async (userId: string): Promise<Tokens> =>
 };
 
 const registerUser = asyncHandler(async (req: Request, res: Response) => {
-  const { username, email, fullname, avatar, password } = req.body;
-  // const user = await User.create({
-  //   username,
-  //   email,
-  //   fullname,
-  //   avatar,
-  //   password
-  // });
-  //
-  // await user.save();
+  const { username, email, fullname, password } = req.body;
 
-  const users = await User.find();
-  res.status(StatusCodes.OK).json({
-    message: 'ok, working',
-    users: users
+  if ([fullname, email, username, password].some((field: string) => field?.trim() === ''))
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'All fields are required');
+
+  const existingUser = await User.findOne({
+    $or: [{ username }, { email }]
   });
+
+  if (existingUser) throw new ApiError(StatusCodes.CONFLICT, 'User with email or username already exists');
+
+  const avatarFiles = (req as IRequestWithMulterFiles).files!.avatar;
+  const coverImageFiles = (req as IRequestWithMulterFiles).files!.coverImage;
+  let avatarLocalPath = undefined;
+  let coverImgLocalPath = undefined;
+
+  if (avatarFiles && avatarFiles.length > 0 && avatarFiles[0].path)
+    avatarLocalPath = avatarFiles[0].path;
+  else
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Avatar file is required');
+
+  if (coverImageFiles && coverImageFiles.length > 0 && coverImageFiles[0].path)
+    coverImgLocalPath = coverImageFiles[0].path;
+
+  if (!avatarLocalPath) throw new ApiError(StatusCodes.BAD_REQUEST, 'Avatar file is required');
+
+  const avatar = await uploadToCloudinary(avatarLocalPath);
+
+  let coverImg;
+  if (coverImgLocalPath)
+    coverImg = await uploadToCloudinary(coverImgLocalPath);
+
+  if (!avatar) throw new ApiError(StatusCodes.BAD_REQUEST, 'Avatar file is required');
+
+  const user = await User.create({
+    username: username.toLowerCase(),
+    email,
+    fullname,
+    password,
+    avatar: avatar.url,
+    coverImage: coverImg ? coverImg?.url : ''
+  });
+
+  const createdUser = await User.findById(user._id).select('-password -refreshToken');
+
+  if (!createdUser)
+    throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Something went wrong while registering user');
+
+  res
+    .status(StatusCodes.CREATED)
+    .json(new ApiResponse(
+      StatusCodes.OK,
+      createdUser,
+      'User created successfully'
+    ));
 });
 
 const loginUser = asyncHandler(async (req: Request, res: Response) => {
@@ -107,8 +152,44 @@ const logoutUser = asyncHandler(async (req: IRequestWithUser, res: Response) => 
     ));
 });
 
+const refreshAccessToken = asyncHandler(async (req: Request, res: Response) => {
+  const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
+  if (!incomingRefreshToken) throw new ApiError(StatusCodes.UNAUTHORIZED, 'Unauthorized user');
+
+  try {
+    const refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET as string;
+    const decodedToken: JwtPayloadWithUser = jwt.verify(incomingRefreshToken, refreshTokenSecret) as JwtPayloadWithUser;
+
+    const user = await User.findById(decodedToken?._id);
+    if (!user) throw new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid refresh token');
+
+    if (incomingRefreshToken !== user?.refreshToken)
+      throw new ApiError(StatusCodes.UNAUTHORIZED, 'Refresh token is expired or used');
+
+    const { accessToken, refreshToken: newRefreshToken } = await generateAccessAndRefreshToken(user._id);
+
+    res
+      .status(StatusCodes.OK)
+      .cookie('accessToken', accessToken)
+      .cookie('refreshToken', newRefreshToken)
+      .json(
+        new ApiResponse(
+          StatusCodes.OK,
+          {
+            accessToken,
+            refreshToken: newRefreshToken
+          },
+          'Access token refreshed'
+        )
+      );
+  } catch (error) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid refresh token.');
+  }
+});
+
 export {
   registerUser,
   loginUser,
-  logoutUser
+  logoutUser,
+  refreshAccessToken
 };

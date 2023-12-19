@@ -1,4 +1,4 @@
-import type { Request } from 'express';
+import type { Request, Express } from 'express';
 import { JwtPayload } from 'jsonwebtoken';
 
 interface IUser {
@@ -16,5 +16,12 @@ export interface IRequestWithUser extends Request {
     email: string
     username: string
     fullname: string
+  }
+}
+
+export interface IRequestWithMulterFiles extends Request {
+  files?: {
+    avatar?: Express.Multer.File[];
+    coverImage?: Express.Multer.File[];
   }
 }
