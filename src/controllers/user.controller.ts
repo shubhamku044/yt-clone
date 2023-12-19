@@ -187,14 +187,15 @@ const refreshAccessToken = asyncHandler(async (req: Request, res: Response) => {
   }
 });
 
-const changeCurrentPassword = asyncHandler((req: IRequestWithUser, res: Response) => {
+const changeCurrentPassword = asyncHandler(async (req: IRequestWithUser, res: Response) => {
   const { oldPassword, newPassword } = req.body;
 
   const user = await User.findById(req.user?._id);
 
   const isPasswordCorrect = await user?.isPasswordCorrect(oldPassword);
   if (!isPasswordCorrect) throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid old password');
-  user?.password = newPassword;
+  if (!user) throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Internal server error');
+  user.password = newPassword;
   await user?.save({ validateBeforeSave: false });
 
   res
@@ -204,7 +205,7 @@ const changeCurrentPassword = asyncHandler((req: IRequestWithUser, res: Response
     );
 });
 
-const getCurrentUser = asyncHandler((req: IRequestWithUser, res: Response) => {
+const getCurrentUser = asyncHandler(async (req: IRequestWithUser, res: Response) => {
   res
     .status(StatusCodes.OK)
     .json(
@@ -212,7 +213,7 @@ const getCurrentUser = asyncHandler((req: IRequestWithUser, res: Response) => {
     );
 });
 
-const updateUserDetails = asyncHandler((req: IRequestWithUser, res: Response) => {
+const updateUserDetails = asyncHandler(async (req: IRequestWithUser, res: Response) => {
   const { fullname, email } = req.body;
 
   if (!fullname || !email) throw new ApiError(StatusCodes.BAD_REQUEST, 'All feilds are required');
